@@ -1,41 +1,172 @@
-remote: [true/false]
-
+remote: true
+job_board: linkedin
 experienceLevel:
- internship: [true/false]
- entry: [true/false]
- associate: [true/false]
- mid-senior level: [true/false]
- director: [true/false]
- executive: [true/false]
+ internship: false
+ entry: false
+ associate: false
+ mid-senior level: true
+ director: true
+ executive: true
 
 jobTypes:
- full-time: [true/false]
- contract: [true/false]
- part-time: [true/false]
- temporary: [true/false]
- internship: [true/false]
- other: [true/false]
- volunteer: [true/false]
+ full-time: false
+ contract: true
+ part-time: false
+ temporary: false
+ internship: false
+ other: false
+ volunteer: false
 
 date:
- all time: [true/false]
- month: [true/false]
- week: [true/false]
- 24 hours: [true/false]
+ all time: true
+ month: true
+ week: true
+ 24 hours: true
 
 positions:
-  - position1
-  - position2
+  - Chief Technology Officer (CTO)
+  - Chief Information Officer (CIO)
+  - Chief Data Officer (CDO)
+  - Chief Product Officer (CPO)
+  - Chief Digital Officer
+  - Vice President of Engineering
+  - Vice President of Information Technology
+  - Vice President of Product Management
+  - Director of Software Development
+  - Director of IT Operations
+  - Director of Cloud Services
+  - Director of Data Science
+  - Director of Artificial Intelligence
+  - Director of Machine Learning
+  - Director of DevOps
+  - Director of Technology
+  - Head of Product Management
+  - Head of Data Science
+  - Head of IT Infrastructure
+  - Head of Software Engineering
+  - Head of Innovation
+  - Lead Data Scientist
+  - Machine Learning Engineer
+  - AI Solutions Architect
+  - Big Data Engineer
+  - Data Science Consultant
+  - Senior Data Analyst
+  - Data Engineering Lead
+  - Principal Data Scientist
+  - Deep Learning Specialist
+  - Enterprise Architect
+  - Solution Architect
+  - Technical Architect
+  - Software Architect
+  - Cloud Architect
+  - Data Architect
+  - Security Architect
+  - Infrastructure Architect
+  - Application Architect
+  - Integration Architect
+  - Network Architect
+  - Systems Architect
+  - Information Architect
+  - Platform Architect
+  - DevOps Architect
+  - Mobile Architect
+  - AI Architect
+  - Blockchain Architect
+  - IoT Architect
+  - Chief Technology Architect
+
+  # - NLP (Natural Language Processing) Engineer
+  # - DevOps Engineer
+  # - Senior Cloud DevOps Engineer
+  # - DevOps Architect
+  # - Site Reliability Engineer (SRE)
+  # - Cloud Infrastructure Engineer
+  # - Automation Engineer
+  # - CI/CD Pipeline Engineer
+  # - Platform Engineer
+  # - Cloud Operations Manager
+  # - DevOps Consultant
+  # - Senior Software Developer
+  # - Backend Developer (Python/Java/.NET)
+  # - API Developer
+  # - Microservices Developer
+  # - Integration Developer
+  # - Blockchain Developer
+  # - Data Integration Developer
+  # - Software Development Consultant
+  # - Software Engineer in Test (SDET)
+  # - Cloud Native Developer
+  # - Senior Full Stack Developer
+  # - Full Stack JavaScript Developer (React/Node.js)
+  # - Full Stack Python Developer
+  # - Full Stack Developer (Java/.NET)
+  # - Frontend Architect
+  # - Backend Architect
+  # - Full Stack Cloud Developer
+  # - Full Stack Developer Consultant
+  # - MERN Stack Developer
+  # - MEAN Stack Developer
+  # - Agile Coach
+  # - Senior Scrum Master
+  # - Technical Program Manager
+  # - Agile Delivery Lead
+  # - Agile Project Manager
+  # - Agile Transformation Consultant
+  # - Scrum Product Owner
+  # - Scrum Master Consultant
+  # - Agile Release Train Engineer
+  # - Scaled Agile Framework (SAFe) Program Consultant (SPC)
+  # - Lead Data Scientist
+  # - Machine Learning Engineer
+  # - AI Solutions Architect
+  # - Big Data Engineer
+  # - Data Science Consultant
+  # - Data Architect
+  # - Business Intelligence (BI) Developer
+  # - Cloud Architect
+  # - DevOps Engineer
+  # - Site Reliability Engineer (SRE)
+  # - Cloud Infrastructure Engineer
+  # - Automation Engineer
+  # - Platform Engineer
+  # - Cloud Security Engineer
+  # - Infrastructure as Code (IaC) Specialist
+  # - Senior Software Developer
+  # - Backend Developer
+  # - API Developer
+  # - Microservices Architect
+  # - Mobile App Developer
+  # - Low-Code/No-Code Developer
+  # - Agile Coach
+  # - Scrum Master
+  # - Technical Project Manager
+  # - Agile Transformation Consultant
+  # - Product Owner
+  # - Program Manager
+  # - AI Consultant
+  # - NLP Specialist
+  # - Computer Vision Engineer
+  # - AI Ethics Consultant
+  # - Blockchain Developer
+  # - Digital Transformation Consultant
+  # - Technology Evangelist
+  # - Technical Writer/Documentation Specialist
+  # - QA Automation Engineer
+  # - Performance Tester
+  # - UX Researcher
+  # - Systems Architect
+  # - Virtualization Engineer
+  # - Disaster Recovery Specialist
+
 
 locations:
-  - Country1
-  - Country2
+  - USA
 
 distance: 100
 
 companyBlacklist:
-  - Company1
-  - Company2
+  - ExxonMobil
+  - Empyrean Benefits
 
 titleBlacklist:
   - word1

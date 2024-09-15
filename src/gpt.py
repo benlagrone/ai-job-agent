@@ -222,8 +222,8 @@ class GPTAnswerer:
 
         5. **Education Details**:
         - **Purpose**: Contains information about your academic qualifications.
-        - **Use When**: The question concerns your degrees, universities attended, GPA, and relevant coursework.
-        - **Examples**: Degree, university, GPA, field of study, exams.
+        - **Use When**: The question concerns your degrees, and universities attended..
+        - **Examples**: Degree, university, field of study.
 
         6. **Experience Details**:
         - **Purpose**: Details your professional work history and key responsibilities.
@@ -325,3 +325,8 @@ class GPTAnswerer:
             return "cover"
         else:
             return "resume"
+    def answer_question_city(self, question_text: str) -> str:
+        prompt = f"Generate a full city answer in the format 'City, State, Country' for the question: {question_text}"
+        chain = self._create_chain(prompt)
+        response = chain.invoke({"question": question_text})
+        return response.strip()

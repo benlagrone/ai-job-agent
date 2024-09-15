@@ -10,7 +10,7 @@ import src.utils as utils
 from src.job import Job
 from src.linkedIn_easy_applier import LinkedInEasyApplier
 import json
-
+import yaml
 
 class EnvironmentKeys:
     def __init__(self):
@@ -30,6 +30,7 @@ class LinkedInJobManager:
         self.driver = driver
         self.set_old_answers = set()
         self.easy_applier_component = None
+        self.resume_data = None
 
     def set_parameters(self, parameters):
         self.company_blacklist = parameters.get('companyBlacklist', []) or []
@@ -45,7 +46,15 @@ class LinkedInJobManager:
             self.resume_path = None
         self.output_file_directory = Path(parameters['outputFileDirectory'])
         self.env_config = EnvironmentKeys()
-        #self.old_question()
+        
+        # Load and structure resume data
+        plain_text_resume_path = parameters.get('uploads', {}).get('plainTextResume')
+        if plain_text_resume_path and Path(plain_text_resume_path).exists():
+            with open(plain_text_resume_path, 'r') as file:
+                resume_data = yaml.safe_load(file)
+            self.resume_data = resume_data
+        else:
+            raise ConfigError("Missing or invalid plain text resume file")
 
     def set_gpt_answerer(self, gpt_answerer):
         self.gpt_answerer = gpt_answerer
@@ -66,7 +75,7 @@ class LinkedInJobManager:
 
 
     def start_applying(self):
-        self.easy_applier_component = LinkedInEasyApplier(self.driver, self.resume_path, self.set_old_answers, self.gpt_answerer, self.resume_generator_manager)
+        self.easy_applier_component = LinkedInEasyApplier(self.driver, self.resume_path, self.set_old_answers, self.gpt_answerer, self.resume_generator_manager, self.resume_data)
         searches = list(product(self.positions, self.locations))
         random.shuffle(searches)
         page_sleep = 0

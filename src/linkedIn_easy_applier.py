@@ -20,7 +20,7 @@ from selenium.webdriver import ActionChains
 import src.utils as utils
 
 class LinkedInEasyApplier:
-    def __init__(self, driver: Any, resume_dir: Optional[str], set_old_answers: List[Tuple[str, str, str]], gpt_answerer: Any, resume_generator_manager):
+    def __init__(self, driver: Any, resume_dir: Optional[str], set_old_answers: List[Tuple[str, str, str]], gpt_answerer: Any, resume_generator_manager, resume_data: dict):
         if resume_dir is None or not os.path.exists(resume_dir):
             resume_dir = None
         self.driver = driver
@@ -29,6 +29,7 @@ class LinkedInEasyApplier:
         self.gpt_answerer = gpt_answerer
         self.resume_generator_manager = resume_generator_manager
         self.all_data = self._load_questions_from_json()
+        self.phone_number = resume_data['personal_information']['phone_prefix'] + resume_data['personal_information']['phone']
 
 
     def _load_questions_from_json(self) -> List[dict]:
@@ -159,12 +160,22 @@ class LinkedInEasyApplier:
 
     def _discard_application(self) -> None:
         try:
+            # Click the discard button
             self.driver.find_element(By.CLASS_NAME, 'artdeco-modal__dismiss').click()
             time.sleep(random.uniform(3, 5))
-            self.driver.find_elements(By.CLASS_NAME, 'artdeco-modal__confirm-dialog-btn')[0].click()
+
+            # Check for the "Save application" dialog
+            save_buttons = self.driver.find_elements(By.CLASS_NAME, 'artdeco-modal__confirm-dialog-btn')
+            if save_buttons:
+                # Click "Yes" to save the application
+                save_buttons[1].click()  # The second button is usually "Yes"
+            else:
+                # If no save dialog, just confirm the discard
+                self.driver.find_elements(By.CLASS_NAME, 'artdeco-modal__confirm-dialog-btn')[0].click()
+
             time.sleep(random.uniform(3, 5))
         except Exception as e:
-            pass
+            print(f"Error in _discard_application: {str(e)}")
 
     def fill_up(self, job) -> None:
         easy_apply_content = self.driver.find_element(By.CLASS_NAME, 'jobs-easy-apply-content')
@@ -189,7 +200,9 @@ class LinkedInEasyApplier:
             output = self.gpt_answerer.resume_or_cover(parent.text.lower())
             if 'resume' in output:
                 if self.resume_path is not None and self.resume_path.resolve().is_file():
-                    element.send_keys(str(self.resume_path.resolve()))
+                    # Check if the field is empty before uploading
+                    if not element.get_attribute('value'):
+                        element.send_keys(str(self.resume_path.resolve()))
                 else:
                     self._create_and_upload_resume(element, job)
             elif 'cover' in output:
@@ -199,12 +212,14 @@ class LinkedInEasyApplier:
         folder_path = 'generated_cv'
         os.makedirs(folder_path, exist_ok=True)
         try:
-            file_path_pdf = os.path.join(folder_path, f"CV_{random.randint(0, 9999)}.pdf")
-            with open(file_path_pdf, "xb") as f:
-                f.write(base64.b64decode(self.resume_generator_manager.pdf_base64(job_description_text=job.description)))
-            element.send_keys(os.path.abspath(file_path_pdf))
-            job.pdf_path = os.path.abspath(file_path_pdf)
-            time.sleep(2)
+            # Check if the field is empty before generating and uploading
+            if not element.get_attribute('value'):
+                file_path_pdf = os.path.join(folder_path, f"CV_{random.randint(0, 9999)}.pdf")
+                with open(file_path_pdf, "xb") as f:
+                    f.write(base64.b64decode(self.resume_generator_manager.pdf_base64(job_description_text=job.description)))
+                element.send_keys(os.path.abspath(file_path_pdf))
+                job.pdf_path = os.path.abspath(file_path_pdf)
+                time.sleep(2)
         except Exception:
             tb_str = traceback.format_exc()
             raise Exception(f"Upload failed: \nTraceback:\n{tb_str}")
@@ -247,52 +262,61 @@ class LinkedInEasyApplier:
             return True
         return False
 
-    def _find_and_handle_radio_question(self, section: WebElement) -> bool:
+                
+    def _find_and_handle_textbox_question(self, section: WebElement) -> bool:
         question = section.find_element(By.CLASS_NAME, 'jobs-easy-apply-form-element')
-        radios = question.find_elements(By.CLASS_NAME, 'fb-text-selectable__option')
-        if radios:
+        textbox = question.find_elements(By.TAG_NAME, 'input')
+        if textbox:
             question_text = section.text.lower()
-            options = [radio.text.lower() for radio in radios]
             
-            existing_answer = None
-            for item in self.all_data:
-                if self._sanitize_text(question_text) in item['question'] and item['type'] == 'radio':
-                    existing_answer = item
-                    break
+            if 'city' in question_text:
+                city_answer = self.gpt_answerer.answer_question_city(question_text)
+                self._enter_text(textbox[0], city_answer)
+                self._save_questions_to_json({'type': 'textbox', 'question': question_text, 'answer': city_answer})
+                return True
+            
+            if 'phone' in question_text:
+                self._enter_text(textbox[0], self.phone_number)
+                return True
+            
+            existing_answer = next((item for item in self.all_data if self._sanitize_text(question_text) in item['question'] and item['type'] == 'textbox'), None)
             if existing_answer:
-                self._select_radio(radios, existing_answer['answer'])
+                self._enter_text(textbox[0], existing_answer['answer'])
                 return True
 
-            answer = self.gpt_answerer.answer_question_from_options(question_text, options)
-            self._save_questions_to_json({'type': 'radio', 'question': question_text, 'answer': answer})
-            self._select_radio(radios, answer)
-            return True
-        return False
-
-    def _find_and_handle_textbox_question(self, section: WebElement) -> bool:
-        text_fields = section.find_elements(By.TAG_NAME, 'input') + section.find_elements(By.TAG_NAME, 'textarea')
-        if text_fields:
-            text_field = text_fields[0]
-            question_text = section.find_element(By.TAG_NAME, 'label').text.lower()
-            is_numeric = self._is_numeric_field(text_field)
-            if is_numeric:
-                question_type = 'numeric'
+            if self._is_numeric_field(textbox[0]):
                 answer = self.gpt_answerer.answer_question_numeric(question_text)
             else:
-                question_type = 'textbox'
                 answer = self.gpt_answerer.answer_question_textual_wide_range(question_text)
-            existing_answer = None
-            for item in self.all_data:
-                if item['question'] == self._sanitize_text(question_text) and item['type'] == question_type:
-                    existing_answer = item
-                    break
-            if existing_answer:
-                self._enter_text(text_field, existing_answer['answer'])
-                return True
-            self._save_questions_to_json({'type': question_type, 'question': question_text, 'answer': answer})
-            self._enter_text(text_field, answer)
+            self._save_questions_to_json({'type': 'textbox', 'question': question_text, 'answer': answer})
+            self._enter_text(textbox[0], answer)
             return True
         return False
+
+    def _get_city_answer(self, question_text: str) -> str:
+        existing_answer = self._get_existing_answer(question_text, 'textbox')
+        if existing_answer:
+            return existing_answer['answer']
+        
+        city_answer = self.gpt_answerer.answer_question_city(question_text)
+        if not self._is_valid_city_format(city_answer):
+            city_answer = self._format_city_answer(city_answer)
+        
+        self._save_questions_to_json({'type': 'textbox', 'question': question_text, 'answer': city_answer})
+        return city_answer
+
+    def _is_valid_city_format(self, city_answer: str) -> bool:
+        parts = city_answer.split(',')
+        return len(parts) == 3 and all(part.strip() for part in parts)
+
+    def _format_city_answer(self, city_answer: str) -> str:
+        parts = city_answer.split(',')
+        if len(parts) == 1:
+            return f"{parts[0].strip()}, State, Country"
+        elif len(parts) == 2:
+            return f"{parts[0].strip()}, {parts[1].strip()}, Country"
+        else:
+            return ", ".join(part.strip() for part in parts[:3])
 
     def _find_and_handle_date_question(self, section: WebElement) -> bool:
         date_fields = section.find_elements(By.CLASS_NAME, 'artdeco-datepicker__input ')
@@ -317,30 +341,51 @@ class LinkedInEasyApplier:
             return True
         return False
 
-    def _find_and_handle_dropdown_question(self, section: WebElement) -> bool:
-        try:
-            question = section.find_element(By.CLASS_NAME, 'jobs-easy-apply-form-element')
-            question_text = question.find_element(By.TAG_NAME, 'label').text.lower()
-            dropdown = question.find_element(By.TAG_NAME, 'select')
-            if dropdown:
-                select = Select(dropdown)
-                options = [option.text for option in select.options]
-
-                existing_answer = None
-                for item in self.all_data:
-                    if  self._sanitize_text(question_text) in item['question'] and item['type'] == 'dropdown':
-                        existing_answer = item
-                        break
-                if existing_answer:
-                    self._select_dropdown_option(dropdown, existing_answer['answer'])
-                    return True
-
-                answer = self.gpt_answerer.answer_question_from_options(question_text, options)
-                self._save_questions_to_json({'type': 'dropdown', 'question': question_text, 'answer': answer})
-                self._select_dropdown_option(dropdown, answer)
-                return True
-        except Exception:
+    def _find_and_handle_radio_question(self, section: WebElement) -> bool:
+        question = section.find_element(By.CLASS_NAME, 'jobs-easy-apply-form-element')
+        question_text = section.text.lower()
+        
+        # Check for radio buttons
+        radios = question.find_elements(By.CLASS_NAME, 'fb-text-selectable__option')
+        
+        # Check for dropdown
+        dropdown = question.find_elements(By.TAG_NAME, 'select')
+        
+        if radios:
+            options = [radio.text.lower() for radio in radios]
+            element_type = 'radio'
+        elif dropdown:
+            select = Select(dropdown[0])
+            options = [option.text.lower() for option in select.options]
+            element_type = 'dropdown'
+        else:
             return False
+
+        # Check if any option is already selected
+        if element_type == 'radio':
+            selected_option = next((radio for radio in radios if radio.find_element(By.TAG_NAME, 'input').is_selected()), None)
+        else:  # dropdown
+            selected_option = select.first_selected_option.text.lower()
+
+        if selected_option and selected_option != 'select an option':
+            return True
+        
+        if len(options) == 2 and 'yes' in options and 'no' in options:
+            answer = 'yes'
+        else:
+            existing_answer = next((item for item in self.all_data if self._sanitize_text(question_text) in item['question'] and item['type'] == element_type), None)
+            if existing_answer:
+                answer = existing_answer['answer']
+            else:
+                answer = self.gpt_answerer.answer_question_from_options(question_text, options)
+                self._save_questions_to_json({'type': element_type, 'question': question_text, 'answer': answer})
+
+        if element_type == 'radio':
+            self._select_radio(radios, answer)
+        else:  # dropdown
+            self._select_dropdown_option(dropdown[0], answer)
+
+        return True
 
     def _is_numeric_field(self, field: WebElement) -> bool:
         field_type = field.get_attribute('type').lower()
